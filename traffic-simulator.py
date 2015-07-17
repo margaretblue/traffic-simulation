@@ -8,7 +8,7 @@ class Road:
     """has length, type, chance of random slowing down, Tracks where cars are
         Road looks like this:
         |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ... | <= end
-        0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20    1000
+        0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20    999
         c3 c3 c3 c3 c3    c2 c2 c2 c2 c2          c1 c1 c1 c1 c1
                                                    ^           ^
         c1 is car.car_number 1                     |           |
@@ -20,18 +20,24 @@ class Road:
         self.slowdown_percent = slow_down_percent
         self.position_tracker = []
 
+    def layout_cars(self, *args):
+        for car in args:
+            position = car.current_position
+            size = car.car_size
+            self.road[position:(position + car.car_size)] = 1  # occupies spaces for car.car_size
+
     def is_occupied(self):
-        """returns if occupied or maybe car occupying it"""
+        """returns if occupied if theres a 1 in that position or maybe car occupying it"""
         pass
 
     def on_road(self, position)
         """return True if position is on road"""
-        return 0 <= x < self.road_type
+        return 0 <= x < (self.length-1)
 
 class Car:
-    def __init__(self, car_number, current_position, current_speed = 0, car_size=5, car_type='normal', acceleration=2, max_speed=33.333,
+    def __init__(self, current_position, current_speed = 0, car_size=5, car_type='normal', acceleration=2, max_speed=33.333,
                  spacing_multiplier=1, chance_of_deceleration=.10, percent_of_population=1):
-        self.car_number = car_number    # kind of like car name
+        #self.car_number = car_number    # kind of like car name
         self.car_size = car_size        # car length in meters
         self.type = car_type            # normal, aggressive or commercial
         self.acceleration = acceleration #  meters/s of acelleration until reach their max_speed if they haveve room
@@ -58,12 +64,26 @@ class Car:
 
 class Simulation:
 
-    def __init__(self, number_of_cars_on_road=30, duration=60, time_interval=1):
+    def __init__(self, number_of_cars_on_road=30, duration=60, time_interval=1, car_list = []):
         self.number_of_cars_on_road = number_of_cars_on_road
         self.duration = duration                  #duration of 1 simulation in seconds, currently 60 seconds
         self.time_interval = time_interval                #snapshot/step point of speed, currently 1 second
-        all_intervals_car_speeds = []               # will be a list of 30 cars and their speed snapshot at each second
+        self.car_list  = car_list            # will be a list of 30 cars and their speed snapshot at each second
         current_interval_car_speeds_list =  []        # that second's list of 30 car speeds
+
+    def make_car_list(self):
+        """Makes list of all car objects on road at their front positions"""
+        position = 0
+        for items in range(self.number_of_cars_on_road):
+            car = Car(current_position=position)
+            self.car_list.append(car)
+            #can break down road into 33 sections. A car for each section, dont forget CAR SIZE!
+            position += (car.car_size + (33 - car.car_size)
+
+    def lay_cars_on_road(self):
+            #road knows its own
+            for car in self.car_list:
+                self.road.layout_cars(car)
 
     def determine_speed(self, car):
         """1. If car's current speed is below car.max_speed, it increases speed by car.acceleration until max_speed reached.
@@ -90,11 +110,10 @@ class Simulation:
             # TODO how do I find the speed of the car in front of me???
             # consult road.position_tracker
             return speed
-        return speed    # this is the # of meters car will move ahead
-
         # will_collide must be LAST statement
         if will_collide(car, road):
-            speed = 0;
+            speed = 0
+        return speed    # this is the # of meters car will move ahead
 
     def will_match_speed(self, car, road):
         """If another car is too close, drivers will match that car's speed until they have room again."""
@@ -110,9 +129,16 @@ class Simulation:
         return random.choice([True] * (100 * car.chance_of_deceleration) +
                              [False]* (100 * (1 - car.chance_of_deceleration)))
 
+    def determine_next_car(self, car_asking):
+        for index, car in enumerate(self.car_list):
+            if car == car_asking:
+                #TODO: bounds check
+                return self.car_list[index+1]
 
-
-
+    def run(self):
+        current_second = 0
+        positions_all_cars_list = []
+        speeds_all_cars_list = []
 
 
 if __name__ == '__main__':
