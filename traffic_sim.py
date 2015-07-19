@@ -1,8 +1,8 @@
-import numpy as np
-import matplotlib
-import statistics
 import math
+import matplotlib
+import numpy as np
 import random
+import statistics
 
 class Road:
     """has length, type, chance of random slowing down, Tracks where cars are
@@ -19,7 +19,6 @@ class Road:
         self.road_length = road_length
         self.road_type = road_type
         self.slowdown_percent = slowdown_percent
-        # self.position_tracker = []
         self.road_positions_array = None
 
 
@@ -38,7 +37,6 @@ class Car:
         self.chance_of_deceleration = chance_of_deceleration  #percent chance that driver will randomly slow down by 2ms
         self.percent_of_population = percent_of_population #percent representation of population of drivers on road
         self.current_position = current_position    #current position of TAIL of car in road
-        # self.next_position = next.position
 
         def __str__(self):
             return "car[{car_name}]'s object".format(self.car_name)
@@ -81,14 +79,6 @@ class Simulation:
             layout_list.append(tail_position)
             #update car object's current_position
             self.get_car_object_by_name(i).current_position = tail_position
-        print("tail of car 0 is:")
-        print(self.get_car_object_by_name(0).current_position)
-        print("tail of car 1 is:")
-        print(self.get_car_object_by_name(1).current_position)
-        print("tail of car 28 is:")
-        print(self.get_car_object_by_name(28).current_position)
-        print("tail of car 29   is:")
-        print(self.get_car_object_by_name(29).current_position)
         """car in front of car0 is car29
             car in front of car1 is car0
             car in front of car2 is car1 """
@@ -102,21 +92,16 @@ class Simulation:
         for i in range(30):
             # 1. Update speed
             my_car = self.car_objects_dict[i]
-            print("*****")
-            print(my_car.max_speed)
             if i == 0:
                 car_in_front = self.car_objects_dict[29]
-                print("car in front of car{} is car{} ".format(i, 29))
             else:
                 car_in_front = self.car_objects_dict[i-1]
             # collision occurs when car_in_front == my_front
             speed = self.determine_speed(my_car, car_in_front)
-            # update speed on car in self.speed_snapshots_array
             self.speed_snapshots_array[self.second,i] = speed
             my_car.current_speed = speed
-            # 2. have the car move itself and update position
             # TODO ERROR! AttributeError: 'Car' object has no attribute 'move_own_car'
-            # like hell it doesnt.
+            # like hell it doesnt!
             # new_position = my_car.move_own_car()
             my_car.current_position = (my_car.current_position + my_car.current_speed) % 1000
             self.position_snapshots_array[self.second,i] = my_car.current_position
@@ -124,8 +109,8 @@ class Simulation:
     def determine_speed(self, my_car, car_in_front):
         my_front = my_car.current_position + my_car.car_size
         current_speed = self.speed_snapshots_array[(self.second-1),my_car.car_name]
-        print("current speed for car{} is {}".format(my_car.car_name, current_speed))
-        if current_speed < (my_car.max_speed ):
+        #print("current speed for car{} is {}".format(my_car.car_name, current_speed))
+        if current_speed < (my_car.max_speed-2):
         #     #will car collide?
         #     speed = current_speed + my_car.acceleration
         #     if car_in_front.current_position <= my_front + speed:
@@ -133,7 +118,9 @@ class Simulation:
         # TODO below is just a test of accellerating the cars 2ms each second
         # no rules
             speed = current_speed + my_car.acceleration
-        speed = current_speed + my_car.acceleration
+        else:
+            speed = current_speed
+        #speed = current_speed + my_car.acceleration
         return speed
 
 
@@ -150,14 +137,32 @@ class Simulation:
         # # layout where each car needs to be on the road and store in car.current_position
             self.move_all_cars()
             self.second += 1
+        # convert the speed_snapshots_array into a (30,) array of average speeds
+        #a.sum(axis=0) # sum over rows for each of the 3 columns
+        average_speeds_each_car_array = self.speed_snapshots_array.mean(axis=0)
+        # you can pack it in tuples!
+        #print("****")
+        #print(average_speeds_each_car_array + average_speeds_each_car_array)
+        return average_speeds_each_car_array, self.position_snapshots_array
 
-        print(self.speed_snapshots_array)
-        print(self.position_snapshots_array)
 
 if __name__ == '__main__':
     simulation = Simulation()
     road = Road()
     simulation.run()
-    print(simulation.speed_snapshots_array)
-    print(simulation.position_snapshots_array)
+    gigantic_speeds_each_car_array = np.array([])
 
+    for x in range(10):
+        simulation = Simulation()
+        road = Road()
+        average_speeds_each_car_array, position_snapshots_array = simulation.run()
+        #print(average_speeds_each_car_array)
+        if gigantic_speeds_each_car_array.size == 0:
+            gigantic_speeds_each_car_array = average_speeds_each_car_array
+        else:
+            gigantic_speeds_each_car_array = np.vstack((gigantic_speeds_each_car_array,average_speeds_each_car_array))
+        #gigantic_speeds_each_car_array = average_speeds_each_car_array
+        print("Simulation  done")
+
+    print(gigantic_speeds_each_car_array)
+    print(gigantic_speeds_each_car_array.size)
