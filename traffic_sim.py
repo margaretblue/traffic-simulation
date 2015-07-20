@@ -1,5 +1,5 @@
 import math
-import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import random
 import statistics
@@ -149,7 +149,7 @@ class Simulation:
 if __name__ == '__main__':
     simulation = Simulation()
     road = Road()
-    simulation.run()
+    #simulation.run()
     gigantic_speeds_each_car_array = np.array([])
 
     for x in range(10):
@@ -162,7 +162,14 @@ if __name__ == '__main__':
         else:
             gigantic_speeds_each_car_array = np.vstack((gigantic_speeds_each_car_array,average_speeds_each_car_array))
         #gigantic_speeds_each_car_array = average_speeds_each_car_array
-        print("Simulation  done")
+    position_snapshots_array     # a position snapshot (60,30)for very last trial
+    gigantic_speeds_each_car_array
 
-    print(gigantic_speeds_each_car_array)
-    print(gigantic_speeds_each_car_array.size)
+    stan_dev_speed_per_car = gigantic_speeds_each_car_array.std(axis=1)  # standard deviation from μ speed of each car
+    all_trials_stan_dev_speed = np.sum(stan_dev_speed_per_car) / len(stan_dev_speed_per_car)  #standard dev of all cars
+    mean_speed_per_car = gigantic_speeds_each_car_array.mean(axis=1)     # μ speed for each car all trials
+    all_trials_mean_speed = np.sum(mean_speed_per_car) / len(mean_speed_per_car)  # μ speed for all cars all trials
+    print("*******")
+    print("μ speed for all cars all trials is {}".format(all_trials_mean_speed))
+    print("with a σ of {}".format(all_trials_stan_dev_speed))
+    print("Speed limit for this road should be {}".format(all_trials_stan_dev_speed + all_trials_mean_speed))
