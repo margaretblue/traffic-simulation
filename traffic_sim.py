@@ -110,6 +110,10 @@ class Simulation:
         my_front = my_car.current_position + my_car.car_size
         current_speed = self.speed_snapshots_array[(self.second-1),my_car.car_name]
         #print("current speed for car{} is {}".format(my_car.car_name, current_speed))
+        # if car Random Slow DOwn
+        if current_speed > 2 and self.will_randomly_slow_down(my_car):
+            speed = my_car.current_speed - 2
+            return speed
         if current_speed < (my_car.max_speed-2):
         #     #will car collide?
         #     speed = current_speed + my_car.acceleration
@@ -123,6 +127,14 @@ class Simulation:
         #speed = current_speed + my_car.acceleration
         return speed
 
+    def will_randomly_slow_down(self, car):
+        """Drivers will randomly (10% chance each second) slow by 2 m/s """
+        number_of_true = 10 * car.chance_of_deceleration
+        number_of_false = 10- (int(number_of_true))
+        choices_list = list(int(number_of_true)*[True])
+        choices_list.extend(list(number_of_false*[False]))
+        selection = random.choice(choices_list)
+        return selection
 
 
     def run(self):
