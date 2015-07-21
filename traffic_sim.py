@@ -46,11 +46,16 @@ class Car:
             self.current_position = (self.current_position + self.current_speed) % 1000
             return self.current_position
 
+        def trailing_distance(self):
+            """Distance car prefers its tail position to end up behind another vehicle"""
+            return (self.current_speed * self.spacing_multiplier) + self.car_size
+
+
 class Simulation:
     """ONE 60-second trial"""
     def __init__(self, number_of_cars_on_road=30, duration=60, time_interval=1,
                  car_objects_dict = {}, speed_snapshots_array=[],
-                 position_snapshots_array=[], second=0 ):
+                 position_snapshots_array=[], second=0, number_of_collisions=0 ):
         self.number_of_cars_on_road = number_of_cars_on_road
         self.duration = duration                  #duration of 1 simulation in seconds, currently 60 seconds
         self.time_interval = time_interval                #snapshot/step point of speed, currently 1 second
@@ -58,6 +63,7 @@ class Simulation:
         self.speed_snapshots_array = speed_snapshots_array
         self.position_snapshots_array = position_snapshots_array
         self.second = second
+        self.number_of_collisions = number_of_collisions
 
     def make_cars(self):
         """Instantiates 30 cars & puts their objects in car_objects_dict"""
@@ -104,25 +110,37 @@ class Simulation:
             # like hell it doesnt!
             # new_position = my_car.move_own_car()
             my_car.current_position = (my_car.current_position + my_car.current_speed) % 1000
+            if (my_car.current_position + my_car.car_size) >= car_in_front.current_position:
+                print("****BUMP****")
+                self.number_of_collisions += 1
             self.position_snapshots_array[self.second,i] = my_car.current_position
 
     def determine_speed(self, my_car, car_in_front):
         my_front = my_car.current_position + my_car.car_size
         current_speed = self.speed_snapshots_array[(self.second-1),my_car.car_name]
-        #print("current speed for car{} is {}".format(my_car.car_name, current_speed))
-        # if car Random Slow DOwn
+        # RANDOM SLOWDOWN
         if current_speed > 2 and self.will_randomly_slow_down(my_car):
             speed = my_car.current_speed - 2
             return speed
         if current_speed < (my_car.max_speed-2):
-        #     #will car collide?
-        #     speed = current_speed + my_car.acceleration
-        #     if car_in_front.current_position <= my_front + speed:
-        #         speed =
-        # TODO below is just a test of accellerating the cars 2ms each second
-        # no rules
-            speed = current_speed + my_car.acceleration
+            # if my car can accelerate and still maintain desired following distance
+            if (my_front + (my_car.acceleration) + (my_car.current_speed * my_car.spacing_multiplier)) \
+                    <= car_in_front.current_position:
+                #then then accelerate until you reach the
+                speed = my_car.current_speed + my_car.acceleration
+                # following distance of :
+                if self.trigger_lap_reset(my_car, car_in_front):
+                    speed = car_in_front.current_speed
+                #return speed
+
+            else:
+                # if not just MATCH SPEED of car ahead
+                speed = car_in_front.current_speed
+                #return speed
+            # speed = current_speed + my_car.acceleration   # NO RULES
         else:
+            #if car is going to bump into another car?
+            # put that logic in the "move_myself"
             speed = current_speed
         #speed = current_speed + my_car.acceleration
         return speed
@@ -135,6 +153,12 @@ class Simulation:
         choices_list.extend(list(number_of_false*[False]))
         selection = random.choice(choices_list)
         return selection
+
+    def trigger_lap_reset(self, car, car_in_front):
+        if car.current_position > 970:
+            return (car_in_front.current_position + 1000 - car.current_position) < 30
+        else:
+            return (car_in_front.current_position - car.current_position) <= 30
 
 
     def run(self):
@@ -157,7 +181,6 @@ class Simulation:
         #print(average_speeds_each_car_array + average_speeds_each_car_array)
         return average_speeds_each_car_array, self.position_snapshots_array
 
-
 if __name__ == '__main__':
     simulation = Simulation()
     road = Road()
@@ -174,6 +197,7 @@ if __name__ == '__main__':
         else:
             gigantic_speeds_each_car_array = np.vstack((gigantic_speeds_each_car_array,average_speeds_each_car_array))
         #gigantic_speeds_each_car_array = average_speeds_each_car_array
+        print("Minute/Trial {} had {} collisons".format(x, simulation.number_of_collisions))
     position_snapshots_array     # a position snapshot (60,30)for very last trial
     gigantic_speeds_each_car_array
 
@@ -185,3 +209,6 @@ if __name__ == '__main__':
     print("μ speed for all cars all trials is {}".format(all_trials_mean_speed))
     print("with a σ of {}".format(all_trials_stan_dev_speed))
     print("Speed limit for this road should be {}".format(all_trials_stan_dev_speed + all_trials_mean_speed))
+
+# TODO: 10 cars 10 secs 1000 meters
+# use watch statements in debugger
